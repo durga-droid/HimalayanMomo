@@ -11,16 +11,32 @@ export const Home = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'VEG' | 'NON-VEG'>('ALL');
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchInitialMenu = async () => {
       try {
         const data = await getMenu();
         setProducts(data);
         if (data.length === 0) {
-          await seedMenu();
+          try {
+            await seedMenu();
+            const freshData = await getMenu();
+            setProducts(freshData);
+          } catch (seedErr: any) {
+            console.warn('Seeding failed (likely due to RLS):', seedErr.message);
+            if (data.length === 0) {
+              setError('Menu is empty. Please add items via the Admin panel or run the SQL setup script in Supabase.');
+            }
+          }
         }
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        console.error('Fetch error:', err);
+        if (err.message?.includes('relation "public.menu" does not exist')) {
+          setError('Database tables not found. Please run the SQL setup script in your Supabase SQL Editor.');
+        } else {
+          setError('Failed to connect to Supabase. Please check your environment variables.');
+        }
       } finally {
         setLoading(false);
       }
@@ -86,11 +102,20 @@ export const Home = () => {
           ))}
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map(product => (
-            <MenuCard key={product.id} product={product} />
-          ))}
-        </div>
+        {error ? (
+          <div className="rounded-2xl border border-orange-200 bg-orange-50 p-8 text-center">
+            <p className="font-medium text-orange-800">{error}</p>
+            <p className="mt-2 text-sm text-orange-600">
+              Make sure you have followed the SQL setup instructions and set your environment variables.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map(product => (
+              <MenuCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

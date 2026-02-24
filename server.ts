@@ -111,6 +111,16 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+  } else {
+    // Production: Serve static files from dist
+    const path = await import("path");
+    const distPath = path.resolve(process.cwd(), "dist");
+    app.use(express.static(distPath));
+
+    // SPA Fallback
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {

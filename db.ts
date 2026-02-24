@@ -71,9 +71,9 @@ export function initDb() {
       { name: 'Veg Paneer Mix Fried Momos', category: 'VEG', type: 'Fried', price_half: 60, price_full: 100 },
       { name: 'Veg Paneer Mix Crispy Momos', category: 'VEG', type: 'Crispy', price_half: 70, price_full: 120 },
       // NON-VEG
-      { name: 'Chicken Steam Momos', category: 'NON-VEG', type: 'Steam', price_half: 50, price_full: 80 },
-      { name: 'Chicken Fried Momos', category: 'NON-VEG', type: 'Fried', price_half: 60, price_full: 100 },
-      { name: 'Chicken Crispy Momos', category: 'NON-VEG', type: 'Crispy', price_half: 70, price_full: 120 },
+      { name: 'Chicken Steam Momos', category: 'NON-VEG', type: 'Steam', price_half: 60, price_full: 90 },
+      { name: 'Chicken Fried Momos', category: 'NON-VEG', type: 'Fried', price_half: 70, price_full: 110 },
+      { name: 'Chicken Crispy Momos', category: 'NON-VEG', type: 'Crispy', price_half: 80, price_full: 130 },
     ];
 
     const insert = db.prepare('INSERT INTO products (name, category, type, price_half, price_full) VALUES (@name, @category, @type, @price_half, @price_full)');
@@ -143,6 +143,11 @@ export function initDb() {
     SET image_url = 'https://i.pinimg.com/736x/1d/22/cf/1d22cf8ee5e70d49abf78919d9a9ef75.jpg' 
     WHERE name = 'Chicken Crispy Momos'
   `).run();
+
+  // Update prices for Non-Veg items (New Prices)
+  db.prepare(`UPDATE products SET price_half = 60, price_full = 90 WHERE name = 'Chicken Steam Momos'`).run();
+  db.prepare(`UPDATE products SET price_half = 70, price_full = 110 WHERE name = 'Chicken Fried Momos'`).run();
+  db.prepare(`UPDATE products SET price_half = 80, price_full = 130 WHERE name = 'Chicken Crispy Momos'`).run();
 }
 
 export default db;

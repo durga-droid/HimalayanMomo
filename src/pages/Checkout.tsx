@@ -5,7 +5,14 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Loader2, CreditCard, Banknote } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
+import { createOrder, updateOrderPaymentStatus } from '../services/orderService';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 export const Checkout = () => {
   const { cart, totalAmount, clearCart } = useCart();
@@ -15,9 +22,6 @@ export const Checkout = () => {
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
-    address: '',
-    orderType: 'Pickup' as 'Delivery' | 'Pickup',
-    paymentMethod: 'UPI' as 'UPI' | 'COD'
   });
 
   if (cart.length === 0) {
@@ -25,47 +29,72 @@ export const Checkout = () => {
     return null;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // 1. Create order in PENDING state first
+      const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
+      const order = await createOrder(
+        {
+          order_number: orderNumber,
           customer_name: formData.name,
-          mobile_number: formData.mobile,
-          address: 'Pickup Order', // Default address for pickup
-          order_type: 'Pickup',
-          items: cart,
+          phone: formData.mobile,
+          address: 'Pickup Order',
           total_amount: totalAmount,
-        }),
-      });
+          payment_status: 'PENDING',
+          order_status: 'NEW'
+        },
+        cart.map(item => ({
+          item_name: item.name,
+          plate_type: item.variant.toUpperCase() as 'HALF' | 'FULL',
+          quantity: item.quantity,
+          price: item.price
+        }))
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Simulate Payment Delay
-        if (formData.paymentMethod === 'UPI') {
-          toast.loading('Redirecting to Payment Gateway...', { duration: 2000 });
-          setTimeout(() => {
-            clearCart();
-            navigate('/success', { state: { orderId: data.orderId } });
-          }, 2000);
-        } else {
-          clearCart();
-          navigate('/success', { state: { orderId: data.orderId } });
+      // 2. Launch Razorpay
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: totalAmount * 100, // Amount in paise
+        currency: "INR",
+        name: "Himalayan Momo",
+        description: "Momo Order Payment",
+        handler: async function (response: any) {
+          if (response.razorpay_payment_id) {
+            try {
+              // 3. Update payment status to PAID
+              await updateOrderPaymentStatus(order.id, 'PAID');
+              
+              clearCart();
+              navigate('/success', { state: { orderId: orderNumber } });
+              toast.success('Payment Successful & Order Placed!');
+            } catch (error) {
+              console.error(error);
+              toast.error('Failed to update payment status');
+            }
+          }
+        },
+        prefill: {
+          name: formData.name,
+          contact: formData.mobile,
+        },
+        theme: {
+          color: "#ea580c",
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+          }
         }
-      } else {
-        toast.error('Failed to place order');
-      }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (error) {
       console.error(error);
-      toast.error('Something went wrong');
-    } finally {
+      toast.error('Failed to initiate order');
       setLoading(false);
     }
   };
@@ -77,7 +106,7 @@ export const Checkout = () => {
       <div className="container mx-auto max-w-2xl px-4 py-8">
         <h1 className="mb-8 text-3xl font-bold text-stone-900">Checkout</h1>
         
-        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handlePayment} className="space-y-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-stone-900">Contact Details</h2>
             <Input 
@@ -100,35 +129,11 @@ export const Checkout = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-stone-900">Payment Method</h2>
             <div className="space-y-2">
-              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${formData.paymentMethod === 'UPI' ? 'border-orange-600 bg-orange-50' : 'border-stone-200 hover:bg-stone-50'}`}>
-                <input 
-                  type="radio" 
-                  name="paymentMethod" 
-                  value="UPI" 
-                  checked={formData.paymentMethod === 'UPI'}
-                  onChange={() => setFormData({...formData, paymentMethod: 'UPI'})}
-                  className="h-4 w-4 text-orange-600 focus:ring-orange-500"
-                />
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-orange-600 bg-orange-50 p-4 transition-all">
                 <CreditCard className="h-5 w-5 text-stone-600" />
                 <div className="flex flex-col">
-                  <span className="font-medium text-stone-900">Pay via UPI (GPay/PhonePe)</span>
-                  {formData.paymentMethod === 'UPI' && (
-                    <span className="text-sm text-stone-500">UPI ID: 8652124114-2@ybl</span>
-                  )}
+                  <span className="font-medium text-stone-900">Pay via UPI / Card (Razorpay)</span>
                 </div>
-              </label>
-              
-              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${formData.paymentMethod === 'COD' ? 'border-orange-600 bg-orange-50' : 'border-stone-200 hover:bg-stone-50'}`}>
-                <input 
-                  type="radio" 
-                  name="paymentMethod" 
-                  value="COD" 
-                  checked={formData.paymentMethod === 'COD'}
-                  onChange={() => setFormData({...formData, paymentMethod: 'COD'})}
-                  className="h-4 w-4 text-orange-600 focus:ring-orange-500"
-                />
-                <Banknote className="h-5 w-5 text-stone-600" />
-                <span className="font-medium text-stone-900">Cash on Delivery</span>
               </label>
             </div>
           </div>
@@ -144,7 +149,7 @@ export const Checkout = () => {
               className="mt-6 w-full" 
               isLoading={loading}
             >
-              {formData.paymentMethod === 'UPI' ? 'Pay Now' : 'Place Order'}
+              Pay Now
             </Button>
           </div>
         </form>

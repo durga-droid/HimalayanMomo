@@ -4,9 +4,9 @@ import toast from 'react-hot-toast';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, variant: 'Half' | 'Full') => void;
-  removeFromCart: (productId: number, variant: 'Half' | 'Full') => void;
-  updateQuantity: (productId: number, variant: 'Half' | 'Full', quantity: number) => void;
+  addToCart: (product: Product, variant: 'Half' | 'Full', price: number) => void;
+  removeFromCart: (productId: string, variant: 'Half' | 'Full') => void;
+  updateQuantity: (productId: string, variant: 'Half' | 'Full', quantity: number) => void;
   clearCart: () => void;
   totalAmount: number;
   itemCount: number;
@@ -24,10 +24,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('momo-cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product: Product, variant: 'Half' | 'Full') => {
+  const addToCart = (product: Product, variant: 'Half' | 'Full', price: number) => {
     setCart(prev => {
       const existingItem = prev.find(item => item.id === product.id && item.variant === variant);
-      const price = variant === 'Half' ? product.price_half : product.price_full;
 
       if (existingItem) {
         toast.success(`Updated quantity for ${product.name} (${variant})`);
@@ -43,12 +42,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const removeFromCart = (productId: number, variant: 'Half' | 'Full') => {
+  const removeFromCart = (productId: string, variant: 'Half' | 'Full') => {
     setCart(prev => prev.filter(item => !(item.id === productId && item.variant === variant)));
     toast.error('Removed item from cart');
   };
 
-  const updateQuantity = (productId: number, variant: 'Half' | 'Full', quantity: number) => {
+  const updateQuantity = (productId: string, variant: 'Half' | 'Full', quantity: number) => {
     if (quantity < 1) {
       removeFromCart(productId, variant);
       return;

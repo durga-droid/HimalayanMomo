@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Menu, X } from 'lucide-react';
+import { ShoppingBag, Menu, X, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Navbar = () => {
   const { itemCount } = useCart();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
@@ -20,6 +22,14 @@ export const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-4">
+          {user && (
+            <Link to="/admin" className="hidden md:block">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <User className="h-4 w-4" /> Admin
+              </Button>
+            </Link>
+          )}
+          
           <Link to="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingBag className="h-5 w-5" />
@@ -52,7 +62,7 @@ export const Navbar = () => {
                 Menu
               </Link>
               <Link to="/admin" onClick={() => setIsOpen(false)} className="text-sm font-medium text-stone-600 hover:text-orange-600">
-                Admin Login
+                {user ? 'Admin Dashboard' : 'Admin Login'}
               </Link>
             </div>
           </motion.div>

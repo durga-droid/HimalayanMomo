@@ -1,37 +1,39 @@
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   category: 'VEG' | 'NON-VEG';
-  type: 'Steam' | 'Fried' | 'Crispy';
-  price_half: number;
-  price_full: number;
-  description?: string;
+  type: 'STEAM' | 'FRIED' | 'CRISPY';
+  half_price: number;
+  full_price: number;
   image_url?: string;
+  is_available: boolean;
+  created_at?: string;
 }
 
 export interface CartItem extends Product {
   variant: 'Half' | 'Full';
   quantity: number;
-  price: number; // Calculated based on variant
+  price: number;
 }
 
 export interface Order {
   id: string;
+  order_number: string;
   customer_name: string;
-  mobile_number: string;
+  phone: string;
   address: string;
-  order_type: 'Delivery' | 'Pickup';
   total_amount: number;
-  payment_status: 'Pending' | 'Paid';
-  order_status: 'New' | 'Completed' | 'Cancelled';
+  payment_status: 'PENDING' | 'PAID';
+  order_status: 'NEW' | 'COMPLETED';
   created_at: string;
-  items: OrderItem[];
+  items?: OrderItem[];
 }
 
 export interface OrderItem {
-  id: number;
-  product_name: string;
-  variant: 'Half' | 'Full';
+  id?: string;
+  order_id?: string;
+  item_name: string;
+  plate_type: 'HALF' | 'FULL';
   quantity: number;
   price: number;
 }

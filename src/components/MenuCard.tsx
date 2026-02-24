@@ -17,7 +17,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({ product }) => {
   const quantity = cartItem ? cartItem.quantity : 0;
 
   const handleAdd = () => {
-    addToCart(product, variant);
+    addToCart(product, variant, variant === 'Half' ? product.half_price : product.full_price);
   };
 
   const handleIncrement = () => {
@@ -69,7 +69,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({ product }) => {
             </button>
           </div>
           <div className="text-lg font-bold text-orange-600">
-            ₹{variant === 'Half' ? product.price_half : product.price_full}
+            ₹{variant === 'Half' ? product.half_price : product.full_price}
           </div>
         </div>
 

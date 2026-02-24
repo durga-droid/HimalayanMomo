@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { MenuCard } from '../components/MenuCard';
 import { Product } from '../types';
+import { getMenu, subscribeToMenu, seedMenu } from '../services/menuService';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,16 +12,29 @@ export const Home = () => {
   const [filter, setFilter] = useState<'ALL' | 'VEG' | 'NON-VEG'>('ALL');
 
   useEffect(() => {
-    fetch('/api/menu')
-      .then(res => res.json())
-      .then(data => {
+    const fetchInitialMenu = async () => {
+      try {
+        const data = await getMenu();
         setProducts(data);
-        setLoading(false);
-      })
-      .catch(err => {
+        if (data.length === 0) {
+          await seedMenu();
+        }
+      } catch (err) {
         console.error(err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchInitialMenu();
+
+    const subscription = subscribeToMenu((data) => {
+      setProducts(data);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const filteredProducts = products.filter(p => filter === 'ALL' || p.category === filter);

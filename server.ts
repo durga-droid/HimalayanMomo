@@ -123,8 +123,10 @@ async function startServer() {
     });
   }
 
+  const APP_URL = process.env.NODE_ENV === "production" ? "https://himalayanmomo-4.onrender.com" : `http://localhost:${PORT}`;
+
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on ${APP_URL}`);
   });
 }
 

@@ -31,7 +31,7 @@ export const Success = () => {
           <Button size="lg" variant="outline">Order More</Button>
         </Link>
         <a 
-          href={`https://wa.me/?text=I just ordered delicious momos from HimalayanMomo! Order ID: ${orderId}`}
+          href={`https://wa.me/?text=I just ordered delicious momos from HimalayanMomo! Order ID: ${orderId}. Order here: https://himalayanmomo-4.onrender.com`}
           target="_blank"
           rel="noopener noreferrer"
         >
